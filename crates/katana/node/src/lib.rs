@@ -16,27 +16,27 @@ use config::{Config, SequencingConfig};
 use dojo_metrics::exporters::prometheus::PrometheusRecorder;
 use dojo_metrics::{Report, Server as MetricsServer};
 use hyper::{Method, Uri};
+use jsonrpsee::RpcModule;
 use jsonrpsee::server::middleware::proxy_get_request::ProxyGetRequestLayer;
 use jsonrpsee::server::{AllowHosts, ServerBuilder, ServerHandle};
-use jsonrpsee::RpcModule;
-use katana_core::backend::storage::Blockchain;
 use katana_core::backend::Backend;
+use katana_core::backend::storage::Blockchain;
 use katana_core::env::BlockContextGenerator;
 use katana_core::service::block_producer::BlockProducer;
 use katana_core::service::messaging::MessagingConfig;
 use katana_db::mdbx::DbEnv;
 use katana_executor::implementation::blockifier::BlockifierFactory;
 use katana_executor::{ExecutionFlags, ExecutorFactory};
-use katana_pipeline::{stage, Pipeline};
+use katana_pipeline::{Pipeline, stage};
+use katana_pool::TxPool;
 use katana_pool::ordering::FiFo;
 use katana_pool::validation::stateful::TxValidator;
-use katana_pool::TxPool;
 use katana_primitives::env::{CfgEnv, FeeTokenAddressses};
 use katana_rpc::dev::DevApi;
 use katana_rpc::metrics::RpcServerMetrics;
 use katana_rpc::saya::SayaApi;
-use katana_rpc::starknet::forking::ForkedClient;
 use katana_rpc::starknet::StarknetApi;
+use katana_rpc::starknet::forking::ForkedClient;
 use katana_rpc::torii::ToriiApi;
 use katana_rpc_api::dev::DevApiServer;
 use katana_rpc_api::saya::SayaApiServer;
@@ -101,6 +101,7 @@ impl Node {
 
         // TODO: maybe move this to the build stage
         if let Some(ref cfg) = self.metrics_config {
+            let addr = cfg.socket_addr();
             let mut reports: Vec<Box<dyn Report>> = Vec::new();
 
             if let Some(ref db) = self.db {
