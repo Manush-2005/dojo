@@ -525,6 +525,7 @@ mod test {
     #[tokio::test]
     async fn test_client_messaging() -> Result<(), Box<dyn Error>> {
         use std::collections::HashMap;
+        use std::sync::Arc;
         use std::time::Duration;
 
         use dojo_types::schema::{Member, Struct, Ty};
@@ -568,13 +569,15 @@ mod test {
 
         let sequencer = KatanaRunner::new().expect("Failed to create Katana sequencer");
 
-        let provider = JsonRpcClient::new(HttpTransport::new(sequencer.url()));
+        let provider = Arc::new(JsonRpcClient::new(HttpTransport::new(sequencer.url())));
 
         let account = sequencer.account_data(0);
 
         let (shutdown_tx, _) = broadcast::channel(1);
         let (mut executor, sender) =
-            Executor::new(pool.clone(), shutdown_tx.clone()).await.unwrap();
+            Executor::new(pool.clone(), shutdown_tx.clone(), Arc::clone(&provider), 100)
+                .await
+                .unwrap();
         tokio::spawn(async move {
             executor.run().await.unwrap();
         });
