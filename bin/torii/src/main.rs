@@ -225,9 +225,7 @@ async fn main() -> anyhow::Result<()> {
         args.max_concurrent_tasks,
     )
     .await?;
-    tokio::spawn(async move {
-        executor.run().await.unwrap();
-    });
+    let executor_handle = tokio::spawn(async move { executor.run().await });
 
     let db = Sql::new(pool.clone(), sender.clone(), &contracts).await?;
 
@@ -344,6 +342,7 @@ async fn main() -> anyhow::Result<()> {
 
     tokio::select! {
         res = engine_handle => res??,
+        res = executor_handle => res??,
         res = proxy_server_handle => res??,
         res = graphql_server_handle => res?,
         res = grpc_server_handle => res??,
